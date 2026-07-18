@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Background circle -->
+  <circle cx="16" cy="16" r="16" fill="#080E1C"/>
+  <!-- Signal lamp glow -->
+  <circle cx="16" cy="10" r="5" fill="#FFB800" opacity="0.9"/>
+  <circle cx="16" cy="10" r="8" fill="rgba(255,184,0,0.2)"/>
+  <!-- Lamp post -->
+  <line x1="16" y1="15" x2="16" y2="28" stroke="#C4A882" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Rail lines -->
+  <line x1="8" y1="28" x2="24" y2="28" stroke="#C4A882" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="10" y1="24" x2="22" y2="24" stroke="rgba(196,168,130,0.4)" stroke-width="1" stroke-linecap="round" stroke-dasharray="2 3"/>
+</svg>
