@@ -1,8 +1,9 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 
 export default function AboutSection() {
@@ -72,40 +73,50 @@ export default function AboutSection() {
           >
             {!imgError ? (
               <div className="relative w-full h-full">
-                {/* Base photo */}
-                <Image
-                  src="/photo.jpg"
-                  alt="Shruti Verma - professional portrait"
-                  fill
-                  priority
-                  sizes="(max-width: 768px) 280px, 340px"
-                  onError={() => setImgError(true)}
-                  className="object-cover transition-transform duration-700 ease-in-out transform group-hover:scale-105"
-                />
-
-                {/* Alt photo */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: showAltImage ? 1 : 0 }}
-                  transition={{ duration: 0.45, ease: "easeInOut" }}
-                  className="absolute inset-0 w-full h-full"
-                >
-                  <Image
-                    src="/traditional.jpg"
-                    alt="Shruti Verma - traditional attire portrait"
-                    fill
-                    sizes="(max-width: 768px) 280px, 340px"
-                    onError={() => setImgError(true)}
-                    className="object-cover transition-transform duration-700 ease-in-out transform group-hover:scale-105"
-                  />
-                </motion.div>
-
-                {/* Cybernetic glowing lines overlay on hover */}
-                <div
-                  className={`absolute inset-0 bg-gradient-to-t from-amber-500/20 via-transparent to-transparent transition-opacity duration-700 pointer-events-none ${
-                    showAltImage ? "opacity-100" : "opacity-0"
-                  }`}
-                />
+                <AnimatePresence mode="wait" initial={false}>
+                  {showAltImage ? (
+                    /* Traditional attire — slides/scales in fully opaque */
+                    <motion.div
+                      key="alt"
+                      initial={{ scale: 1.06, opacity: 1 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 1.06, opacity: 1 }}
+                      transition={{ duration: 0.25, ease: "easeOut" }}
+                      className="absolute inset-0 w-full h-full"
+                    >
+                      <Image
+                        src="/traditional.jpg"
+                        alt="Shruti Verma - traditional attire portrait"
+                        fill
+                        sizes="(max-width: 768px) 280px, 340px"
+                        onError={() => setImgError(true)}
+                        className="object-cover"
+                      />
+                      {/* Amber gradient overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-amber-500/20 via-transparent to-transparent pointer-events-none" />
+                    </motion.div>
+                  ) : (
+                    /* Professional portrait — base image */
+                    <motion.div
+                      key="base"
+                      initial={{ scale: 1.06, opacity: 1 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 1.06, opacity: 1 }}
+                      transition={{ duration: 0.25, ease: "easeOut" }}
+                      className="absolute inset-0 w-full h-full"
+                    >
+                      <Image
+                        src="/photo.jpg"
+                        alt="Shruti Verma - professional portrait"
+                        fill
+                        priority
+                        sizes="(max-width: 768px) 280px, 340px"
+                        onError={() => setImgError(true)}
+                        className="object-cover"
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             ) : (
               /* Vector Silhouette Fallback if image files are missing */

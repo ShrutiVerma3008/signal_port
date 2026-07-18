@@ -50,7 +50,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${outfit.variable}`}>
+    <html lang="en" className={`${inter.variable} ${outfit.variable}`} suppressHydrationWarning>
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -59,9 +59,8 @@ export default function RootLayout({
             __html: `
               (function() {
                 try {
-                  var hasSeen = sessionStorage.getItem('portfolio-preloader-shown');
                   var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-                  if (!hasSeen && !prefersReduced) {
+                  if (!prefersReduced) {
                     document.documentElement.classList.add('preload-active');
                   }
                 } catch (e) {}

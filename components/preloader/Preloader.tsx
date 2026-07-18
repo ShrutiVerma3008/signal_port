@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useEffect, useState, useRef } from "react";
@@ -11,14 +12,29 @@ export default function Preloader() {
   
   const skipButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Initialize and check sessionStorage + reduced motion
+  const handleComplete = () => {
+    setShowPreloader(false);
+
+    // Restore scroll and remove html class
+    document.documentElement.classList.remove("preload-active");
+    document.body.style.overflow = "";
+
+    // Unhide and programmatically focus main content
+    const mainContent = document.getElementById("main-content");
+    if (mainContent) {
+      mainContent.removeAttribute("aria-hidden");
+      mainContent.setAttribute("tabindex", "-1");
+      mainContent.focus();
+    }
+  };
+
+  // Initialize: show preloader on every load unless reduced-motion is preferred
   useEffect(() => {
     setIsMounted(true);
     
     const hasReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const hasSeenPreloader = sessionStorage.getItem("portfolio-preloader-shown");
     
-    if (!hasReducedMotion && !hasSeenPreloader) {
+    if (!hasReducedMotion) {
       setShowPreloader(true);
       document.body.style.overflow = "hidden";
     } else {
@@ -120,22 +136,7 @@ export default function Preloader() {
     }
   }, [progress, showPreloader]);
 
-  const handleComplete = () => {
-    setShowPreloader(false);
-    sessionStorage.setItem("portfolio-preloader-shown", "true");
 
-    // Restore scroll and remove html class
-    document.documentElement.classList.remove("preload-active");
-    document.body.style.overflow = "";
-
-    // Unhide and programmatically focus main content
-    const mainContent = document.getElementById("main-content");
-    if (mainContent) {
-      mainContent.removeAttribute("aria-hidden");
-      mainContent.setAttribute("tabindex", "-1");
-      mainContent.focus();
-    }
-  };
 
   if (!isMounted) return null;
 
