@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 
 const CONTACT_INFO = {
@@ -13,22 +14,83 @@ const CONTACT_INFO = {
 export default function Footer() {
   const [formState, setFormState] = useState({ name: "", email: "", subject: "", message: "" });
   const [status, setStatus] = useState<"idle" | "sending" | "success">("idle");
+  const [submittedName, setSubmittedName] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    setMounted(true);
+    const motionMQ = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotion(motionMQ.matches);
+    const handleMotionChange = (e: MediaQueryListEvent) => {
+      setReducedMotion(e.matches);
+    };
+    motionMQ.addEventListener("change", handleMotionChange);
+    return () => {
+      motionMQ.removeEventListener("change", handleMotionChange);
+    };
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formState.name || !formState.email || !formState.message) return;
     setStatus("sending");
-    
-    // Simulate API request to backend/email API
-    setTimeout(() => {
-      setStatus("success");
-      setFormState({ name: "", email: "", subject: "", message: "" });
-      setTimeout(() => setStatus("idle"), 5000);
-    }, 1500);
+    setError(null);
+
+    const isDev = process.env.NODE_ENV === "development";
+    const simulateError = isDev && (
+      process.env.NEXT_PUBLIC_SIMULATE_CONTACT_ERROR === "true" ||
+      (typeof window !== "undefined" && window.location.search.includes("simulate_error=true"))
+    );
+
+    if (simulateError) {
+      setTimeout(() => {
+        setError("TRANSMISSION ERROR: Simulated telemetry failure (dev-only check).");
+        setStatus("idle");
+      }, 1500);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formState),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && (data.success || res.status === 200)) {
+        setStatus("success");
+        setSubmittedName(formState.name);
+        setFormState({ name: "", email: "", subject: "", message: "" });
+      } else {
+        setError(data.error || "Failed to deliver transmission over the line.");
+        setStatus("idle");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Network failure on telemetry connection.");
+      setStatus("idle");
+    }
   };
 
   return (
-    <footer id="contact" className="relative pt-16 pb-10 px-4" style={{ background: "#070C14" }}>
+    <footer id="contact" className="relative pt-16 pb-10 px-4" style={{ background: "#070C14", "--amber": "#FFB800", "--rail": "#C4A882", "--navy-mid": "#161C22" } as React.CSSProperties}>
+      {/* Self-contained CSS keyframe animation for the Morse code indicator light */}
+      <style>{`
+        @keyframes MorseFlicker {
+          0%, 100% { opacity: 0.25; filter: drop-shadow(0 0 0 transparent); }
+          12%, 35%, 65% { opacity: 1; filter: drop-shadow(0 0 6px var(--amber)); }
+          22%, 48%, 78% { opacity: 0.45; filter: drop-shadow(0 0 2px var(--amber)); }
+        }
+        .animate-morse {
+          animation: MorseFlicker 0.6s infinite alternate;
+        }
+      `}</style>
+
       {/* Signal-lamp divider */}
       <div className="max-w-3xl mx-auto mb-12 flex items-center gap-4">
         <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(196,168,130,0.3))" }} />
@@ -53,113 +115,196 @@ export default function Footer() {
             Let&apos;s build something that actually ships.
           </p>
 
-          {/* ── Contact Form Card ────────────────────────────────────────── */}
-          <div className="max-w-xl mx-auto mb-16 text-left bg-[#111B27]/80 backdrop-blur-md border border-slate-700/50 p-6 md:p-8 rounded-2xl shadow-xl">
-            <h3 className="text-white text-base font-bold mb-4" style={{ fontFamily: "'Outfit', sans-serif" }}>
-              Send a Transmission
-            </h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="form-name" className="block text-xs font-mono text-slate-400 mb-1.5 uppercase tracking-wider">
-                    Name
-                  </label>
-                  <input
-                    id="form-name"
-                    type="text"
-                    required
-                    value={formState.name}
-                    onChange={(e) => setFormState((prev) => ({ ...prev, name: e.target.value }))}
-                    placeholder="Your Name"
-                    disabled={status === "sending"}
-                    className="w-full bg-[#080E1C] border border-slate-700/60 focus:border-amber-500 rounded-lg px-4 py-2.5 text-sm text-slate-200 outline-none transition-all focus:ring-1 focus:ring-amber-500"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="form-email" className="block text-xs font-mono text-slate-400 mb-1.5 uppercase tracking-wider">
-                    Email Address
-                  </label>
-                  <input
-                    id="form-email"
-                    type="email"
-                    required
-                    value={formState.email}
-                    onChange={(e) => setFormState((prev) => ({ ...prev, email: e.target.value }))}
-                    placeholder="your.email@example.com"
-                    disabled={status === "sending"}
-                    className="w-full bg-[#080E1C] border border-slate-700/60 focus:border-amber-500 rounded-lg px-4 py-2.5 text-sm text-slate-200 outline-none transition-all focus:ring-1 focus:ring-amber-500"
-                  />
-                </div>
-              </div>
-              <div>
-                <label htmlFor="form-subject" className="block text-xs font-mono text-slate-400 mb-1.5 uppercase tracking-wider">
-                  Subject
-                </label>
-                <input
-                  id="form-subject"
-                  type="text"
-                  value={formState.subject}
-                  onChange={(e) => setFormState((prev) => ({ ...prev, subject: e.target.value }))}
-                  placeholder="Collaboration, Job Role, etc."
-                  disabled={status === "sending"}
-                  className="w-full bg-[#080E1C] border border-slate-700/60 focus:border-amber-500 rounded-lg px-4 py-2.5 text-sm text-slate-200 outline-none transition-all focus:ring-1 focus:ring-amber-500"
-                />
-              </div>
-              <div>
-                <label htmlFor="form-message" className="block text-xs font-mono text-slate-400 mb-1.5 uppercase tracking-wider">
-                  Message
-                </label>
-                <textarea
-                  id="form-message"
-                  required
-                  rows={4}
-                  value={formState.message}
-                  onChange={(e) => setFormState((prev) => ({ ...prev, message: e.target.value }))}
-                  placeholder="Tell me about your project, team, or opportunity..."
-                  disabled={status === "sending"}
-                  className="w-full bg-[#080E1C] border border-slate-700/60 focus:border-amber-500 rounded-lg px-4 py-2.5 text-sm text-slate-200 outline-none transition-all focus:ring-1 focus:ring-amber-500 resize-none animate-none"
-                />
-              </div>
+          {/* Screen Reader Announcement Region */}
+          <div className="sr-only" aria-live="polite">
+            {status === "success" && `Transmission sent. Signal successfully logged for Shruti Verma.`}
+            {error && `Submission failed: ${error}`}
+          </div>
 
-              <button
-                type="submit"
-                disabled={status === "sending"}
-                className={`w-full py-3 rounded-lg font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 border cursor-pointer ${
-                  status === "success"
-                    ? "bg-green-500/10 border-green-500/30 text-green-400"
-                    : "bg-amber-500 border-amber-500 hover:bg-amber-400 text-[#080E1C] shadow-[0_0_12px_rgba(255,184,0,0.2)] hover:shadow-[0_0_20px_rgba(255,184,0,0.4)]"
-                }`}
-              >
-                {status === "idle" && (
-                  <>
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <path d="M14.5 1.5l-13 6.5 5 1.5 1.5 5 6.5-13z M6.5 9.5l3.5-3.5" />
-                    </svg>
-                    Send Signal
-                  </>
-                )}
-                {status === "sending" && (
-                  <>
-                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    Transmitting...
-                  </>
-                )}
-                {status === "success" && (
-                  <>
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M2.5 8l3.5 3.5 7.5-7.5" />
-                    </svg>
-                    Signal Deployed!
-                  </>
-                )}
-              </button>
+          {/* ── Telegraph Console Card ─────────────────────────────────────── */}
+          <div className="max-w-xl mx-auto mb-16 text-left relative z-10">
+            <AnimatePresence mode="wait">
+              {status === "success" ? (
+                /* Success Message (Telegraph layout) */
+                <motion.div
+                  key="success-confirmation"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="p-5 border border-dashed border-emerald-500/35 bg-emerald-500/5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 font-mono text-xs text-emerald-400"
+                >
+                  <div className="flex items-center gap-3">
+                    {/* Settled green signal-light LED */}
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#22c55e] shadow-[0_0_8px_#22c55e] animate-pulse flex-shrink-0" />
+                    <span>
+                      <span className="font-bold block uppercase tracking-wider mb-0.5">TRANSMISSION DEPLOYED</span>
+                      Transmission logged. I will reply soon. Thank you, {submittedName}!
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setStatus("idle")}
+                    className="px-3 py-1.5 border border-emerald-500/30 rounded text-[10px] text-emerald-400 hover:bg-emerald-500/10 transition-all uppercase cursor-pointer select-none font-bold"
+                  >
+                    Reset Console
+                  </button>
+                </motion.div>
+              ) : (
+                /* Telegraph Console Form */
+                <motion.div
+                  key="telegraph-form"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="border border-[var(--rail)]/30 p-6 md:p-8 rounded-2xl shadow-2xl relative outline outline-1 outline-[var(--navy-mid)]"
+                  style={{ background: "#161C22" }}
+                >
+                  {/* Console Header Plaque */}
+                  <div className="flex justify-center mb-6">
+                    <div className="bg-[var(--navy-mid)] border border-[var(--rail)]/30 rounded px-4 py-1.5 text-[10px] sm:text-xs font-mono text-[var(--amber)] uppercase tracking-wider inline-flex items-center gap-2 shadow-inner select-none font-bold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--amber)] animate-pulse" />
+                      Send a Transmission
+                    </div>
+                  </div>
 
-              {status === "success" && (
-                <p className="text-xs text-green-400 font-mono text-center mt-2">
-                  ✓ Transmission logged at Indian Railways interface. I will reply soon.
-                </p>
+                  {/* Warning Inline Console Error Alert */}
+                  {error && (
+                    <div className="bg-red-950/20 border border-dashed border-red-500/30 rounded-lg p-4 mb-5 font-mono text-xs text-red-400 flex items-start gap-2.5">
+                      <span className="text-red-500 text-sm">⚠</span>
+                      <div>
+                        <span className="font-bold block uppercase tracking-wider mb-1">TELEMETRY ERROR</span>
+                        {error}
+                      </div>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div>
+                        <label htmlFor="form-name" className="block text-[10px] font-mono text-slate-400 mb-1 uppercase tracking-widest font-bold">
+                          Name
+                        </label>
+                        <input
+                          id="form-name"
+                          type="text"
+                          required
+                          value={formState.name}
+                          onChange={(e) => setFormState((prev) => ({ ...prev, name: e.target.value }))}
+                          placeholder="Your Name"
+                          disabled={status === "sending"}
+                          className="w-full bg-transparent border-b border-dashed border-slate-700/60 focus:border-b-2 focus:border-solid focus:border-[var(--amber)] px-2 py-2 text-sm text-slate-200 outline-none transition-all placeholder-slate-700/60 focus:ring-0 rounded-none font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="form-email" className="block text-[10px] font-mono text-slate-400 mb-1 uppercase tracking-widest font-bold">
+                          Email Address
+                        </label>
+                        <input
+                          id="form-email"
+                          type="email"
+                          required
+                          value={formState.email}
+                          onChange={(e) => setFormState((prev) => ({ ...prev, email: e.target.value }))}
+                          placeholder="your.email@example.com"
+                          disabled={status === "sending"}
+                          className="w-full bg-transparent border-b border-dashed border-slate-700/60 focus:border-b-2 focus:border-solid focus:border-[var(--amber)] px-2 py-2 text-sm text-slate-200 outline-none transition-all placeholder-slate-700/60 focus:ring-0 rounded-none font-mono"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label htmlFor="form-subject" className="block text-[10px] font-mono text-slate-400 mb-1 uppercase tracking-widest font-bold">
+                        Subject
+                      </label>
+                      <input
+                        id="form-subject"
+                        type="text"
+                        value={formState.subject}
+                        onChange={(e) => setFormState((prev) => ({ ...prev, subject: e.target.value }))}
+                        placeholder="Collaboration, Job Role, etc."
+                        disabled={status === "sending"}
+                        className="w-full bg-transparent border-b border-dashed border-slate-700/60 focus:border-b-2 focus:border-solid focus:border-[var(--amber)] px-2 py-2 text-sm text-slate-200 outline-none transition-all placeholder-slate-700/60 focus:ring-0 rounded-none font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="form-message" className="block text-[10px] font-mono text-slate-400 mb-1 uppercase tracking-widest font-bold">
+                        Message
+                      </label>
+                      <textarea
+                        id="form-message"
+                        required
+                        rows={4}
+                        value={formState.message}
+                        onChange={(e) => setFormState((prev) => ({ ...prev, message: e.target.value }))}
+                        placeholder="Tell me about your project, team, or opportunity..."
+                        disabled={status === "sending"}
+                        className="w-full bg-transparent border-b border-dashed border-slate-700/60 focus:border-b-2 focus:border-solid focus:border-[var(--amber)] px-2 py-2 text-sm text-slate-200 outline-none transition-all placeholder-slate-700/60 focus:ring-0 rounded-none resize-none animate-none font-mono"
+                      />
+                    </div>
+
+                    {/* SVG traveling pulse animation */}
+                    {status === "sending" && !reducedMotion && mounted && (
+                      <div className="w-full h-4 relative overflow-hidden my-4" aria-hidden="true">
+                        <svg className="w-full h-full" viewBox="0 0 400 16" fill="none">
+                          <path d="M 0 8 L 400 8" stroke="var(--rail)" strokeWidth="1.5" strokeDasharray="3 3" opacity="0.3" />
+                          <motion.circle
+                            cx="0"
+                            cy="8"
+                            r="4.5"
+                            fill="var(--amber)"
+                            animate={{ cx: ["0%", "100%"] }}
+                            transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}
+                            style={{ filter: "drop-shadow(0 0 4px var(--amber))" }}
+                          />
+                        </svg>
+                      </div>
+                    )}
+
+                    {/* Physical Telegraph Key Action Assembly */}
+                    <div className="pt-2 flex items-center justify-between border-t border-slate-800/40">
+                      <div className="flex items-center gap-4">
+                        <button
+                          type="submit"
+                          disabled={status === "sending"}
+                          aria-label="Send Signal Transmission"
+                          className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-150 border-2 select-none cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
+                            status === "sending"
+                              ? "bg-slate-800 border-slate-700 text-slate-500 shadow-none pointer-events-none"
+                              : "bg-[var(--amber)] border-[var(--navy)] text-[var(--navy)] shadow-[0_4px_0_var(--navy)] hover:bg-[#FFC420] active:translate-y-1 active:shadow-none hover:shadow-[0_4px_0_var(--navy)]"
+                          }`}
+                        >
+                          {/* Telegraph key visual icon */}
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <circle cx="12" cy="12" r="3" />
+                            <path d="M12 2v7M12 15v7M2 12h7M15 12h7" />
+                          </svg>
+                        </button>
+                        
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest font-bold">
+                            {status === "sending" ? "TRANSMITTING OVER WIRE..." : "TAP KEY TO TRANSMIT"}
+                          </span>
+                          <span className="text-[9px] font-mono text-slate-500 uppercase tracking-wider">
+                            {status === "sending" ? "Morse modulation active" : "Secure line Platform 01"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Morse indicator LED light */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-mono text-slate-500 uppercase">LINE STATUS</span>
+                        <span
+                          aria-hidden="true"
+                          className={`w-3 h-3 rounded-full border border-slate-800 transition-all duration-300 ${
+                            status === "sending"
+                              ? "bg-[var(--amber)] shadow-[0_0_8px_var(--amber)] animate-morse"
+                              : "bg-slate-900"
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  </form>
+                </motion.div>
               )}
-            </form>
+            </AnimatePresence>
           </div>
 
           {/* Links row */}

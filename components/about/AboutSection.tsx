@@ -148,8 +148,8 @@ export default function AboutSection() {
         </ScrollReveal>
 
 
-        {/* ── Bio text ──────────────────────────────────────────────────── */}
-        <ScrollReveal direction="right" className="flex-1">
+        {/* ── Bio text (Train Driver's Logbook Redesign) ───────────────────── */}
+        <ScrollReveal direction="right" className="flex-1 w-full">
           <div>
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/8 text-amber-400 text-xs font-mono tracking-widest uppercase mb-5">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
@@ -157,59 +157,139 @@ export default function AboutSection() {
             </span>
 
             <h2
-              className="text-3xl sm:text-4xl font-bold text-white mt-2 mb-5"
+              className="text-3xl sm:text-4xl font-bold text-white mt-2 mb-6"
               style={{ fontFamily: "'Outfit', sans-serif" }}
             >
               The Story Behind the Signal
             </h2>
 
-            <div className="space-y-4 text-slate-400 leading-relaxed text-[15px]">
-              <p>
-                I&apos;m a final-year B.Tech student in AI &amp; Data Science at{" "}
-                <span className="text-slate-200 font-medium">
-                  Gati Shakti Vishwavidyalaya, Vadodara
-                </span>{" "}
-                (CGPA 9.58/10.0), specializing in Railway AI — the only university in India
-                with a dedicated Railway technology stream.
-              </p>
-              <p>
-                It started at 2am with a 400-page Railway policy PDF and a question:
-                could a language model actually understand this? That late-night experiment
-                became a full{" "}
-                <span className="text-amber-400 font-medium">GraphRAG system</span> with
-                knowledge graphs, multi-hop reasoning, and SHAP explainability — and
-                a research internship at the{" "}
-                <span className="text-slate-200 font-medium">Ministry of Railways</span>.
-              </p>
-              <p>
-                I&apos;m actively looking for{" "}
-                <span className="text-amber-400 font-medium">AI/ML and Data Science roles</span>{" "}
-                where I can bring production-grade thinking to hard problems. Every project
-                here has a real metric, a real user, and a real lesson.
-              </p>
-            </div>
+            {/* Logbook Backing Page */}
+            <div
+              className="relative w-full rounded-2xl border border-slate-800/80 shadow-2xl p-6 md:p-8 md:pl-16 overflow-hidden"
+              style={{
+                background: "#161C22",
+                // Ruled notebook lines matching typewriter font leading (28px height)
+                backgroundImage: "repeating-linear-gradient(180deg, transparent 0px, transparent 27px, rgba(196,168,130,0.05) 27px, rgba(196,168,130,0.06) 28px)",
+              }}
+            >
+              {/* Binder Cover Spine (Visible only on desktop md: to prevent text overlap on mobile) */}
+              <div 
+                className="hidden md:block absolute left-0 top-0 bottom-0 w-8 bg-[#0D1219] border-r border-[#C4A882]/25 shadow-[inset_-3px_0_6px_rgba(0,0,0,0.6)] z-20"
+                aria-hidden="true"
+              />
 
-            {/* Quick stats */}
-            <div className="mt-8 grid grid-cols-3 gap-4">
-              {[
-                { label: "CGPA", value: "9.58" },
-                { label: "Projects", value: "8+" },
-                { label: "Competition rank", value: "Top 8 of 15K" },
-              ].map((stat) => (
+              {/* 6 Binder rings (Visible only on desktop md:) */}
+              {[...Array(6)].map((_, i) => (
                 <div
-                  key={stat.label}
-                  className="rounded-lg border border-slate-700/50 p-3 text-center"
-                  style={{ background: "#161C22" }}
-                >
-                  <div
-                    className="text-xl font-bold text-amber-400"
-                    style={{ fontFamily: "'Outfit', sans-serif" }}
-                  >
-                    {stat.value}
-                  </div>
-                  <div className="text-xs text-slate-500 mt-0.5">{stat.label}</div>
-                </div>
+                  key={i}
+                  className="hidden md:block absolute w-8 h-2 bg-gradient-to-r from-slate-600 via-[#C4A882]/80 to-slate-700 border border-slate-950/60 rounded-full shadow-md z-30"
+                  style={{
+                    left: "14px",
+                    top: `${12 + i * 15}%`,
+                  }}
+                  aria-hidden="true"
+                />
               ))}
+
+              {/* Logbook entries */}
+              <div className="space-y-6 relative z-10 font-mono text-xs sm:text-sm text-slate-300 leading-7">
+                {/* Entry 01 */}
+                <motion.div
+                  initial={prefersReducedMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: 12 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ duration: prefersReducedMotion ? 0 : 0.4 }}
+                  viewport={{ once: true, margin: "-40px" }}
+                  className="pb-2 border-b border-slate-800/40"
+                >
+                  <div className="bg-[#0B1420] border border-slate-800/80 px-2 py-0.5 rounded text-[10px] text-[#FFB800] uppercase tracking-wider mb-2 w-fit inline-block font-bold">
+                    LOG ENTRY 01 // STATION: VADODARA
+                  </div>
+                  <p>
+                    I&apos;m a final-year B.Tech student in AI &amp; Data Science at{" "}
+                    <span className="text-slate-100 font-semibold">
+                      Gati Shakti Vishwavidyalaya, Vadodara
+                    </span>{" "}
+                    (CGPA 9.58/10.0), specializing in Railway AI — the only university in India
+                    with a dedicated Railway technology stream.
+                  </p>
+                </motion.div>
+
+                {/* Entry 02 */}
+                <motion.div
+                  initial={prefersReducedMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: 12 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ duration: prefersReducedMotion ? 0 : 0.4, delay: 0.1 }}
+                  viewport={{ once: true, margin: "-40px" }}
+                  className="pb-2 border-b border-slate-800/40"
+                >
+                  <div className="bg-[#0B1420] border border-slate-800/80 px-2 py-0.5 rounded text-[10px] text-[#FFB800] uppercase tracking-wider mb-2 w-fit inline-block font-bold">
+                    LOG ENTRY 02 // TIME: 0200 HRS
+                  </div>
+                  <p>
+                    It started at 2am with a 400-page Railway policy PDF and a question:
+                    could a language model actually understand this?
+                  </p>
+                </motion.div>
+
+                {/* Entry 03 */}
+                <motion.div
+                  initial={prefersReducedMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: 12 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ duration: prefersReducedMotion ? 0 : 0.4, delay: 0.2 }}
+                  viewport={{ once: true, margin: "-40px" }}
+                  className="pb-2 border-b border-slate-800/40"
+                >
+                  <div className="bg-[#0B1420] border border-slate-800/80 px-2 py-0.5 rounded text-[10px] text-[#FFB800] uppercase tracking-wider mb-2 w-fit inline-block font-bold">
+                    LOG ENTRY 03 // RESEARCH DEPLOYMENT
+                  </div>
+                  <p>
+                    That late-night experiment became a full{" "}
+                    <span className="text-amber-400 font-semibold">GraphRAG system</span> with
+                    knowledge graphs, multi-hop reasoning, and SHAP explainability — and
+                    a research internship at the{" "}
+                    <span className="text-slate-100 font-semibold">Ministry of Railways</span>.
+                  </p>
+                </motion.div>
+
+                {/* Entry 04 */}
+                <motion.div
+                  initial={prefersReducedMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: 12 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ duration: prefersReducedMotion ? 0 : 0.4, delay: 0.3 }}
+                  viewport={{ once: true, margin: "-40px" }}
+                >
+                  <div className="bg-[#0B1420] border border-slate-800/80 px-2 py-0.5 rounded text-[10px] text-[#FFB800] uppercase tracking-wider mb-2 w-fit inline-block font-bold">
+                    LOG ENTRY 04 // OBJECTIVE: ACTIVE DEPLOYMENT
+                  </div>
+                  <p>
+                    I&apos;m actively looking for{" "}
+                    <span className="text-amber-400 font-semibold">AI/ML and Data Science roles</span>{" "}
+                    where I can bring production-grade thinking to hard problems. Every project
+                    here has a real metric, a real user, and a real lesson.
+                  </p>
+                </motion.div>
+              </div>
+
+              {/* SUMMARY REGISTRY Stats Stamp */}
+              <div 
+                className="mt-8 border border-dashed border-[#FFB800]/30 bg-amber-500/[0.03] p-4 rounded font-mono text-[10px] sm:text-xs text-[#FFB800] uppercase tracking-wider grid grid-cols-3 gap-4 text-center select-none transform -rotate-0.5 relative z-10"
+                style={{ fontFamily: "'Outfit', sans-serif" }}
+              >
+                {/* Header label inside stamp */}
+                <div className="absolute top-[-7px] left-4 bg-[#161C22] px-2 text-[8px] tracking-widest text-[#FFB800]/60 font-mono">
+                  SUMMARY REGISTRY // TOTALS
+                </div>
+                {[
+                  { label: "CGPA", value: "9.58" },
+                  { label: "Projects", value: "8+" },
+                  { label: "Competition", value: "Top 8 of 15K" },
+                ].map((stat) => (
+                  <div key={stat.label}>
+                    <div className="text-sm sm:text-base font-bold tracking-wide">{stat.value}</div>
+                    <div className="text-[8px] sm:text-[9px] text-[#FFB800]/70 mt-0.5 font-mono">{stat.label}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </ScrollReveal>
