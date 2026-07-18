@@ -87,3 +87,16 @@ body {
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* ── Preloader scroll lock and content hiding ────────────────────────────── */
+html.preload-active {
+  overflow: hidden;
+}
+html.preload-active body {
+  overflow: hidden;
+}
+html.preload-active #main-content {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}

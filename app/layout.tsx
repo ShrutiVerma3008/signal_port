@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 import ChatbotWrapper from "@/components/chatbot/ChatbotWrapper";
+import Preloader from "@/components/preloader/Preloader";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -53,9 +54,27 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var hasSeen = sessionStorage.getItem('portfolio-preloader-shown');
+                  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                  if (!hasSeen && !prefersReduced) {
+                    document.documentElement.classList.add('preload-active');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
       </head>
       <body className="bg-[#080E1C] text-white antialiased">
-        {children}
+        <Preloader />
+        <div id="main-content">
+          {children}
+        </div>
         <ChatbotWrapper />
       </body>
     </html>
