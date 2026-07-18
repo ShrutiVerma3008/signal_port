@@ -1,11 +1,52 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import { motion } from "framer-motion";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 
 export default function AboutSection() {
   const [imgError, setImgError] = useState(false);
-  const [altError, setAltError] = useState(false);
+  const [isHoverDevice, setIsHoverDevice] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [showAlternative, setShowAlternative] = useState(false);
+
+  useEffect(() => {
+    // Detect hover capability
+    const hoverQuery = window.matchMedia("(hover: hover)");
+    setIsHoverDevice(hoverQuery.matches);
+    const handleHoverChange = (e: MediaQueryListEvent) => {
+      setIsHoverDevice(e.matches);
+    };
+    hoverQuery.addEventListener("change", handleHoverChange);
+
+    // Detect reduced motion
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setPrefersReducedMotion(motionQuery.matches);
+    const handleMotionChange = (e: MediaQueryListEvent) => {
+      setPrefersReducedMotion(e.matches);
+    };
+    motionQuery.addEventListener("change", handleMotionChange);
+
+    return () => {
+      hoverQuery.removeEventListener("change", handleHoverChange);
+      motionQuery.removeEventListener("change", handleMotionChange);
+    };
+  }, []);
+
+  // Continuous auto-crossfade loop for mobile/touch devices (no hover capability)
+  useEffect(() => {
+    if (isHoverDevice || prefersReducedMotion) return;
+
+    const interval = setInterval(() => {
+      setShowAlternative((prev) => !prev);
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, [isHoverDevice, prefersReducedMotion]);
+
+  const showAltImage = !prefersReducedMotion && (isHoverDevice ? isHovered : showAlternative);
 
   return (
     <section id="about" className="relative py-24 px-4" style={{ background: "#0B1420" }}>
@@ -18,32 +59,53 @@ export default function AboutSection() {
               border: "1px solid rgba(196,168,130,0.3)",
               boxShadow: "0 0 40px rgba(196,168,130,0.08), inset 0 0 40px rgba(0,0,0,0.4)",
             }}
+            onMouseEnter={() => {
+              if (isHoverDevice && !prefersReducedMotion) {
+                setIsHovered(true);
+              }
+            }}
+            onMouseLeave={() => {
+              if (isHoverDevice && !prefersReducedMotion) {
+                setIsHovered(false);
+              }
+            }}
           >
             {!imgError ? (
               <div className="relative w-full h-full">
-                {/* Regular photo */}
-                <img
+                {/* Base photo */}
+                <Image
                   src="/photo.jpg"
-                  alt="Shruti Verma - Portrait"
+                  alt="Shruti Verma - professional portrait"
+                  fill
+                  priority
+                  sizes="(max-width: 768px) 280px, 340px"
                   onError={() => setImgError(true)}
-                  className={`w-full h-full object-cover transition-all duration-700 ease-in-out transform group-hover:scale-105 ${!altError ? "group-hover:opacity-0" : "opacity-100"
-                    }`}
+                  className="object-cover transition-transform duration-700 ease-in-out transform group-hover:scale-105"
                 />
 
-                {/* AI-themed photo (fades in on hover) */}
-                {!altError && (
-                  <img
-                    src="C:\Users\hp\Desktop\portfolil\public\shrutiverma.jpg"
-                    alt="C:\Users\hp\Desktop\portfolil\public\traditionl.jpeg"
-                    onError={() => setAltError(true)}
-                    className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-all duration-700 ease-in-out transform scale-100 group-hover:scale-105"
+                {/* Alt photo */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: showAltImage ? 1 : 0 }}
+                  transition={{ duration: 0.45, ease: "easeInOut" }}
+                  className="absolute inset-0 w-full h-full"
+                >
+                  <Image
+                    src="/traditional.jpg"
+                    alt="Shruti Verma - traditional attire portrait"
+                    fill
+                    sizes="(max-width: 768px) 280px, 340px"
+                    onError={() => setImgError(true)}
+                    className="object-cover transition-transform duration-700 ease-in-out transform group-hover:scale-105"
                   />
-                )}
+                </motion.div>
 
                 {/* Cybernetic glowing lines overlay on hover */}
-                {!altError && (
-                  <div className="absolute inset-0 bg-gradient-to-t from-amber-500/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-                )}
+                <div
+                  className={`absolute inset-0 bg-gradient-to-t from-amber-500/20 via-transparent to-transparent transition-opacity duration-700 pointer-events-none ${
+                    showAltImage ? "opacity-100" : "opacity-0"
+                  }`}
+                />
               </div>
             ) : (
               /* Vector Silhouette Fallback if image files are missing */
@@ -58,7 +120,7 @@ export default function AboutSection() {
                 <div className="text-center px-4">
                   <p className="text-xs font-mono text-slate-400">Profile Image Ready</p>
                   <p className="text-[10px] font-mono text-slate-600 mt-1 leading-normal">
-                    Drop <code className="text-amber-500">photo.jpg</code> and <code className="text-amber-500">photo-ai.jpg</code> into public/ to enable the hover-reveal effect.
+                    Drop <code className="text-amber-500">photo.jpg</code> and <code className="text-amber-500">traditional.jpg</code> into public/ to enable the hover-reveal effect.
                   </p>
                 </div>
               </div>
@@ -73,6 +135,7 @@ export default function AboutSection() {
             />
           </div>
         </ScrollReveal>
+
 
         {/* ── Bio text ──────────────────────────────────────────────────── */}
         <ScrollReveal direction="right" className="flex-1">

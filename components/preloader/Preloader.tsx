@@ -62,17 +62,17 @@ export default function Preloader() {
         return;
       }
 
-      // Base increment rate: ~1.75% per 45ms step under typical conditions
-      let increment = 1.2 + Math.random() * 1.3;
+      // Base increment rate: ~1.0% per 50ms step under typical conditions (total 5s)
+      let increment = 0.7 + Math.random() * 0.6;
 
       // Slow crawl after 85% if assets/fonts aren't fully ready
       if (currentProgress >= 85 && (!isPageReady || !isFontsReady)) {
-        increment = 0.2 + Math.random() * 0.3;
+        increment = 0.1 + Math.random() * 0.15;
       }
 
       currentProgress = Math.min(100, currentProgress + increment);
       setProgress(Math.floor(currentProgress));
-    }, 45);
+    }, 50);
 
     // Focus skip button on mount for accessibility
     if (skipButtonRef.current) {
@@ -110,12 +110,12 @@ export default function Preloader() {
     }
   }, [progress]);
 
-  // Hold for a brief beat (200ms) at 100% before starting the exit animation
+  // Hold for a brief beat (250ms) at 100% before starting the exit animation
   useEffect(() => {
     if (progress === 100 && showPreloader) {
       const exitHoldTimeout = setTimeout(() => {
         handleComplete();
-      }, 200);
+      }, 250);
       return () => clearTimeout(exitHoldTimeout);
     }
   }, [progress, showPreloader]);
