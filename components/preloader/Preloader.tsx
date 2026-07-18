@@ -4,12 +4,14 @@ import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Preloader() {
-  const [aspect, setAspect] = useState<"red" | "yellow" | "green">("red");
+  const [progress, setProgress] = useState(0);
   const [showPreloader, setShowPreloader] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [announcement, setAnnouncement] = useState("Loading portfolio: 0%");
   
   const skipButtonRef = useRef<HTMLButtonElement>(null);
 
+  // Initialize and check sessionStorage + reduced motion
   useEffect(() => {
     setIsMounted(true);
     
@@ -24,23 +26,53 @@ export default function Preloader() {
     }
   }, []);
 
+  // Drive progress with simulated steps and page readiness check
   useEffect(() => {
     if (!showPreloader) return;
 
-    // 1. Red -> Yellow at 0.4s. Shutters begin to split open.
-    const yellowTimeout = setTimeout(() => {
-      setAspect("yellow");
-    }, 400);
+    let currentProgress = 0;
+    let isPageReady = false;
+    let isFontsReady = false;
 
-    // 2. Yellow -> Green at 0.8s. Shutters complete their opening transition.
-    const greenTimeout = setTimeout(() => {
-      setAspect("green");
-    }, 800);
+    // Detect page/font readiness
+    if (typeof document !== "undefined") {
+      if (document.readyState === "complete") {
+        isPageReady = true;
+      } else {
+        const handleLoad = () => {
+          isPageReady = true;
+        };
+        window.addEventListener("load", handleLoad);
+      }
 
-    // 3. Preloader exit begins at 1.3s (duration 0.4s, unmounting at 1.7s).
-    const exitTimeout = setTimeout(() => {
-      handleComplete();
-    }, 1300);
+      if (document.fonts) {
+        document.fonts.ready.then(() => {
+          isFontsReady = true;
+        }).catch(() => {
+          isFontsReady = true; // Fallback
+        });
+      } else {
+        isFontsReady = true;
+      }
+    }
+
+    const interval = setInterval(() => {
+      if (currentProgress >= 100) {
+        clearInterval(interval);
+        return;
+      }
+
+      // Base increment rate: ~1.75% per 45ms step under typical conditions
+      let increment = 1.2 + Math.random() * 1.3;
+
+      // Slow crawl after 85% if assets/fonts aren't fully ready
+      if (currentProgress >= 85 && (!isPageReady || !isFontsReady)) {
+        increment = 0.2 + Math.random() * 0.3;
+      }
+
+      currentProgress = Math.min(100, currentProgress + increment);
+      setProgress(Math.floor(currentProgress));
+    }, 45);
 
     // Focus skip button on mount for accessibility
     if (skipButtonRef.current) {
@@ -62,12 +94,31 @@ export default function Preloader() {
     }
 
     return () => {
-      clearTimeout(yellowTimeout);
-      clearTimeout(greenTimeout);
-      clearTimeout(exitTimeout);
+      clearInterval(interval);
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [showPreloader]);
+
+  // Sync screen reader announcer at key increments
+  useEffect(() => {
+    if (progress === 0) {
+      setAnnouncement("Loading portfolio: 0%");
+    } else if (progress === 50) {
+      setAnnouncement("Loading portfolio: 50% loaded");
+    } else if (progress === 100) {
+      setAnnouncement("Loading complete. Welcome to Shruti Verma's portfolio.");
+    }
+  }, [progress]);
+
+  // Hold for a brief beat (200ms) at 100% before starting the exit animation
+  useEffect(() => {
+    if (progress === 100 && showPreloader) {
+      const exitHoldTimeout = setTimeout(() => {
+        handleComplete();
+      }, 200);
+      return () => clearTimeout(exitHoldTimeout);
+    }
+  }, [progress, showPreloader]);
 
   const handleComplete = () => {
     setShowPreloader(false);
@@ -88,6 +139,16 @@ export default function Preloader() {
 
   if (!isMounted) return null;
 
+  // Signal lamp state determined directly from current progress
+  const aspect = progress === 100 ? "green" : progress >= 50 ? "yellow" : "red";
+
+  // Calculate shutter reveal ratio (runs from 0 at progress 50% to 1 at progress 100%)
+  const ratio = Math.max(0, (progress - 50) / 50);
+
+  // Pad progress to a fixed 3-digit departure board readout
+  const paddedProgress = progress.toString().padStart(3, "0");
+  const digits = paddedProgress.split("");
+
   return (
     <AnimatePresence>
       {showPreloader && (
@@ -96,11 +157,11 @@ export default function Preloader() {
           exit={{ opacity: 0, y: -30 }}
           transition={{ duration: 0.4, ease: "easeInOut" }}
           className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#080E1C] text-white overflow-hidden select-none"
-          role="status"
-          aria-live="polite"
         >
-          {/* Accessible announcement */}
-          <div className="sr-only">Loading Shruti Verma's portfolio.</div>
+          {/* Accessible screen reader status announcements */}
+          <div className="sr-only" role="status" aria-live="polite">
+            {announcement}
+          </div>
 
           {/* Central Animation Grid */}
           <div className="flex flex-col sm:flex-row items-center gap-8 md:gap-10 px-6">
@@ -142,40 +203,94 @@ export default function Preloader() {
                 Shruti Verma
               </h1>
 
-              {/* Shutter Panels */}
-              <AnimatePresence>
-                {aspect === "red" && (
-                  <div className="absolute inset-0 z-10 flex flex-col pointer-events-none">
-                    {/* Top Panel: Sweeps up */}
-                    <motion.div
-                      initial={{ y: 0 }}
-                      exit={{
-                        y: "-105%",
-                        transition: { duration: 0.4, ease: [0.25, 1, 0.5, 1] },
-                      }}
-                      className="w-full h-[34%] bg-[#0B1420] border-b border-[#C4A882]/20"
-                    />
-                    {/* Middle Panel: Sweeps center-out (horizontal scale) */}
-                    <motion.div
-                      initial={{ scaleX: 1 }}
-                      exit={{
-                        scaleX: 0,
-                        transition: { duration: 0.4, ease: [0.25, 1, 0.5, 1] },
-                      }}
-                      className="w-full h-[33%] bg-[#0B1420] border-y border-[#C4A882]/20 origin-center"
-                    />
-                    {/* Bottom Panel: Sweeps down */}
-                    <motion.div
-                      initial={{ y: 0 }}
-                      exit={{
-                        y: "105%",
-                        transition: { duration: 0.4, ease: [0.25, 1, 0.5, 1] },
-                      }}
-                      className="w-full h-[33%] bg-[#0B1420] border-t border-[#C4A882]/20"
-                    />
-                  </div>
-                )}
-              </AnimatePresence>
+              {/* Shutter Panels - Driven directly by progress ratio */}
+              <div className="absolute inset-0 z-10 flex flex-col pointer-events-none">
+                {/* Top Panel: Sweeps up */}
+                <motion.div
+                  animate={{ y: `-${ratio * 105}%` }}
+                  transition={{ type: "tween", ease: "easeOut", duration: 0.1 }}
+                  className="w-full h-[34%] bg-[#0B1420] border-b border-[#C4A882]/20"
+                />
+                {/* Middle Panel: Sweeps center-out (horizontal scale) */}
+                <motion.div
+                  animate={{ scaleX: 1 - ratio }}
+                  transition={{ type: "tween", ease: "easeOut", duration: 0.1 }}
+                  className="w-full h-[33%] bg-[#0B1420] border-y border-[#C4A882]/20 origin-center"
+                />
+                {/* Bottom Panel: Sweeps down */}
+                <motion.div
+                  animate={{ y: `${ratio * 105}%` }}
+                  transition={{ type: "tween", ease: "easeOut", duration: 0.1 }}
+                  className="w-full h-[33%] bg-[#0B1420] border-t border-[#C4A882]/20"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Progress Track and Train Progress Bar */}
+          <div className="mt-10 flex flex-col items-center w-full max-w-[260px] sm:max-w-[300px]">
+            <div className="relative w-full h-8 flex items-end">
+              {/* Train SVG Carriage moving left to right */}
+              <div
+                className="absolute bottom-1.5 transition-all duration-100 ease-out"
+                style={{ left: `${progress}%`, transform: "translateX(-50%)" }}
+              >
+                <svg
+                  width="26"
+                  height="14"
+                  viewBox="0 0 26 14"
+                  className="text-[#FFB800] fill-current"
+                  style={{ filter: "drop-shadow(0 0 8px rgba(255,184,0,0.6))" }}
+                >
+                  <rect x="2" y="1" width="22" height="9" rx="1.5" />
+                  <rect x="5" y="3" width="4" height="3" rx="0.5" fill="#080E1C" />
+                  <rect x="11" y="3" width="4" height="3" rx="0.5" fill="#080E1C" />
+                  <rect x="17" y="3" width="4" height="3" rx="0.5" fill="#080E1C" />
+                  <circle cx="7" cy="12" r="1.5" />
+                  <circle cx="19" cy="12" r="1.5" />
+                  {/* Front cowcatcher detail */}
+                  <path d="M24 10 L26 13 L22 13 Z" />
+                </svg>
+              </div>
+              
+              {/* The Railway Tracks */}
+              <div className="relative w-full h-1.5 bg-[#C4A882]/20 rounded-full overflow-visible">
+                {/* Rails (top/bottom paths) */}
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-[#C4A882]/30" />
+                <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-[#C4A882]/30" />
+                {/* Sleepers / ties */}
+                <div
+                  className="absolute inset-0 opacity-40"
+                  style={{
+                    backgroundImage: "repeating-linear-gradient(90deg, #C4A882 0px, #C4A882 1px, transparent 1px, transparent 12px)",
+                  }}
+                />
+                {/* Gold path behind the train carriage */}
+                <div
+                  className="absolute top-0 bottom-0 left-0 bg-[#FFB800]/30 transition-all duration-100 ease-out"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+            
+            {/* The Departure Board styled mechanical digit counter */}
+            <div className="flex items-center gap-1.5 mt-5">
+              {digits.map((digit, idx) => (
+                <div
+                  key={idx}
+                  className="w-9 h-12 flex items-center justify-center bg-[#161C22] border border-[#C4A882]/35 text-[#FFB800] text-2xl font-bold font-mono rounded-lg shadow-[inset_0_2px_4px_rgba(0,0,0,0.8),0_3px_6px_rgba(0,0,0,0.4)] relative overflow-hidden"
+                >
+                  {/* Mechanical split line */}
+                  <div className="absolute left-0 right-0 top-[50%] h-[1px] bg-black/50 z-10" />
+                  <span className="relative z-0 select-none">{digit}</span>
+                </div>
+              ))}
+              
+              {/* Percent Character flap */}
+              <div className="w-9 h-12 flex items-center justify-center bg-[#161C22] border border-[#C4A882]/20 text-[#C4A882]/70 text-xl font-bold font-mono rounded-lg shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)] relative">
+                <div className="absolute left-0 right-0 top-[50%] h-[1px] bg-black/50 z-10" />
+                <span className="select-none">%</span>
+              </div>
             </div>
           </div>
 
